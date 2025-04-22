@@ -28,31 +28,31 @@ class SolicitacaoRepository(BaseRepository):
             }
         )
 
-    def find_by_users(self, destinatario: User, remetente: User) -> Solicitacao | None:
+    def find_by_id(self, solicitacao_id: int) -> Solicitacao | None:
         """
-        Busca uma solicitação pelo destinatário e remetente.
+        Busca uma solicitação pelo ID.
 
         Args:
-            destinatario (User): O destinatário da solicitação.
-            remetente (User): O remetente da solicitação.
+            solicitacao_id (int): O ID da solicitação.
 
         Returns:
             Solicitacao | None: A solicitação encontrada ou None se não existir.
         """
         query = text("""
-        SELECT destinatario_id, remetente_id, status
+        SELECT id, destinatario_id, remetente_id, status
         FROM solicitacoes
-        WHERE destinatario_id = :destinatario_id AND remetente_id = :remetente_id
+        WHERE id = :id
         """)
         row = self._conn.execute(
             statement=query,
-            parameters={
-                "destinatario_id": destinatario.id,
-                "remetente_id": remetente.id
-            }
+            parameters={"id": solicitacao_id}
         ).fetchone()
 
         if row:
+            # Buscando os usuários relacionados (destinatário e remetente)
+            destinatario = self._find_user_by_id(row["destinatario_id"])
+            remetente = self._find_user_by_id(row["remetente_id"])
+
             return Solicitacao(
                 destinatario=destinatario,
                 remetente=remetente,
