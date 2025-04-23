@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import messagebox
-import datetime
 
 class SolicitacaoView:
     def __init__(self, root, solicitacoes, voltar_callback, controller):
@@ -13,46 +12,98 @@ class SolicitacaoView:
         """
         self.root = root
         self.controller = controller
-        # agora guardamos a lista de Solicitacao
         self.solicitacoes = list(solicitacoes)
 
+        # Configurações da janela principal
         self.root.title("Amizades")
-        tk.Label(root, text="Amizades", font=("Arial", 16, "bold")).pack(pady=10)
-        tk.Button(root, text="Voltar", command=voltar_callback).place(relx=0.9, rely=0.05)
+        self.root.geometry("600x600")  # Tamanho fixo
+        self.root.resizable(False, False)  # Impede redimensionamento
+        self.root.configure(bg="#f0f0f0")
 
-        self.solicitacoes_frame = tk.Frame(root)
-        self.solicitacoes_frame.pack(pady=20)
+        # Título da tela
+        tk.Label(
+            root, 
+            text="Solicitações de Amizade", 
+            font=("Arial", 20, "bold"), 
+            bg="#f0f0f0", 
+            fg="#333"
+        ).pack(pady=20)
+
+        # Botão de voltar
+        tk.Button(
+            root, 
+            text="Voltar", 
+            command=voltar_callback, 
+            font=("Arial", 12, "bold"), 
+            bg="#d3d3d3",  # Cinza
+            fg="black", 
+            relief="flat", 
+            cursor="hand2", 
+            width=10
+        ).place(relx=0.85, rely=0.05)
+
+        # Frame para exibir as solicitações
+        self.solicitacoes_frame = tk.Frame(root, bg="#f0f0f0")
+        self.solicitacoes_frame.pack(pady=20, fill="both", expand=True)
 
         self.exibir_solicitacoes()
 
+        # Adicionando a logo no meio inferior
+        self._adicionar_logo()
+
     def exibir_solicitacoes(self):
-        # limpa tudo
         for w in self.solicitacoes_frame.winfo_children():
             w.destroy()
-
+    
         if not self.solicitacoes:
-            tk.Label(self.solicitacoes_frame, text="Nenhuma solicitação de amizade.", font=("Arial", 12)).pack()
+            tk.Label(
+                self.solicitacoes_frame, 
+                text="Nenhuma solicitação de amizade.", 
+                font=("Arial", 14), 
+                bg="#f0f0f0", 
+                fg="#555"
+            ).pack(pady=20)
             return
+    
+        for solicitacao in self.solicitacoes:
+            self._criar_frame_solicitacao(self.solicitacoes_frame, solicitacao)
 
-        for solicitacao in list(self.solicitacoes):
-            frame = tk.Frame(self.solicitacoes_frame)
-            frame.pack(pady=5, padx=10, fill="x")
+    def _criar_frame_solicitacao(self, parent, solicitacao):
+        frame = tk.Frame(parent, bg="white", relief="solid", bd=1)
+        frame.pack(pady=10, padx=20, fill="x")
 
-            remetente = solicitacao.remetente.username
-            tk.Label(frame, text=f"Solicitação de amizade de {remetente}", font=("Arial", 12)) \
-                .pack(side="left", padx=5)
+        remetente = solicitacao.remetente.username
+        tk.Label(
+            frame, 
+            text=f"Solicitação de amizade de {remetente}", 
+            font=("Arial", 12), 
+            bg="white", 
+            fg="#333"
+        ).pack(side="left", padx=10)
 
-            tk.Button(
-                frame,
-                text="Aceitar",
-                command=lambda s=solicitacao: self._processar_solicitacao(s, True)
-            ).pack(side="right", padx=5)
+        tk.Button(
+            frame,
+            text="Aceitar",
+            command=lambda: self._processar_solicitacao(solicitacao, True),
+            font=("Arial", 10, "bold"),
+            bg="#d3d3d3",  # Cinza
+            fg="black",
+            relief="flat",
+            cursor="hand2",
+            width=8
+        ).pack(side="right", padx=5)
 
-            tk.Button(
-                frame,
-                text="Recusar",
-                command=lambda s=solicitacao: self._processar_solicitacao(s, False)
-            ).pack(side="right", padx=5)
+        tk.Button(
+            frame,
+            text="Recusar",
+            command=lambda: self._processar_solicitacao(solicitacao, False),
+            font=("Arial", 10, "bold"),
+            bg="#d3d3d3",  # Cinza
+            fg="black",
+            relief="flat",
+            cursor="hand2",
+            width=8
+        ).pack(side="right", padx=5)
 
     def _processar_solicitacao(self, solicitacao, aceitar: bool):
         try:
@@ -66,55 +117,22 @@ class SolicitacaoView:
                 "Solicitação " + ("Aceita" if aceitar else "Recusada"),
                 msg
             )
-            # remove da lista e re-renderiza
             self.solicitacoes.remove(solicitacao)
             self.exibir_solicitacoes()
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao processar solicitação: {e}")
 
-
-# aqui só exemplo de uso, tirar no final
-if __name__ == "__main__":
-    from models.user import User
-    from models.solicitacao import Solicitacao
-    from controllers.solicitacao_controller import SolicitacaoController
-
-    class MockSolicitacaoController(SolicitacaoController):
-        def aceitar(self, solicitacao):
-            print(f"Aceitando solicitação de {solicitacao.remetente.username}")
-
-        def recusar(self, solicitacao):
-            print(f"Recusando solicitação de {solicitacao.remetente.username}")
-
-    def voltar_para_perfil():
-        messagebox.showinfo("Voltar", "Voltando para a tela de perfil do usuário.")
-        root.destroy()
+    def _adicionar_logo(self):
+        # Carregando a imagem da logo no formato PNG ou GIF
+        try:
+            # Certifique-se de que a imagem está no formato PNG ou GIF
+            import os
+            logo_path = os.path.join(os.path.dirname(__file__), "../images/logo.png")
+            photo = tk.PhotoImage(file=logo_path)
     
-    # criando usuario ficticio
-    user1 = User(
-        cpf="12345678901",
-        username="Joao",
-        email="joao@example.com",
-        birthdate=datetime.date(1990, 1, 1),  
-        encrypted_password="123"
-    )
-    user2 = User(
-        cpf="98765432100",
-        username="Maria",
-        email="maria@example.com",
-        birthdate=datetime.date(1992, 2, 2),  
-        encrypted_password="123"
-    )
-    
-    # criando solicitacao ficticia
-    solicitacoes_exemplo = [
-        {"username": user1.username, "solicitacao": Solicitacao(destinatario=user2, remetente=user1)},
-        {"username": user2.username, "solicitacao": Solicitacao(destinatario=user1, remetente=user2)},
-    ]
-
-    root = tk.Tk()
-    controller = MockSolicitacaoController()
-    app = SolicitacaoView(root, solicitacoes_exemplo, voltar_para_perfil, controller)
-    root.geometry("1920x1080")
-    root.mainloop()
-    
+            # Adicionando a imagem no meio inferior
+            logo_label = tk.Label(self.root, image=photo, bg="#f0f0f0")
+            logo_label.image = photo  # Referência para evitar garbage collection
+            logo_label.pack(side="bottom", pady=20)
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao carregar a logo: {e}")

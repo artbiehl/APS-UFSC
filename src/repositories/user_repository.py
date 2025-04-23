@@ -1,92 +1,42 @@
 from repositories.base_repository import BaseRepository
-from models.solicitacao import Solicitacao
 from models.user import User
 from sqlalchemy.sql import text
+from datetime import date
 
 
-class SolicitacaoRepository(BaseRepository):
+class UserRepository(BaseRepository):
     def __init__(self, connection):
         super().__init__(connection)
 
-    def add(self, solicitacao: Solicitacao):
-        """
-        Adiciona uma nova solicitação ao banco de dados.
-
-        Args:
-            solicitacao (Solicitacao): A solicitação a ser adicionada.
-        """
+    def add(self, user: User):
         query = text("""
-        INSERT INTO solicitacoes (destinatario_id, remetente_id, status)
-        VALUES (:destinatario_id, :remetente_id, :status)
+        INSERT INTO users (cpf, username, email, birthdate, encrypted_password)
+        VALUES (:cpf, :username, :email, :birthdate, :encrypted_password)
         """)
         self._conn.execute(
-            statement=query,
+            statement=query, 
             parameters={
-                "destinatario_id": solicitacao.destinatario.id,
-                "remetente_id": solicitacao.remetente.id,
-                "status": solicitacao.status
+                "cpf": user.cpf,
+                "username": user.username,
+                "email": user.email,
+                "birthdate": user.birthdate.isoformat(),  # Convertendo objeto de data para ISO formato aceito pelo banco
+                "encrypted_password": user.encrypted_password
             }
         )
 
-    def find_by_users(self, destinatario: User, remetente: User) -> Solicitacao | None:
-        """
-        Busca uma solicitação pelo destinatário e remetente.
-
-        Args:
-            destinatario (User): O destinatário da solicitação.
-            remetente (User): O remetente da solicitação.
-
-        Returns:
-            Solicitacao | None: A solicitação encontrada ou None se não existir.
-        """
-        query = text("""
-        SELECT destinatario_id, remetente_id, status
-        FROM solicitacoes
-        WHERE destinatario_id = :destinatario_id AND remetente_id = :remetente_id
-        """)
+    def find_by_username(self, username: str) -> User | None:
+        query = text("SELECT id, cpf, username, email, birthdate, encrypted_password FROM users WHERE username = :username")
         row = self._conn.execute(
             statement=query,
-            parameters={
-                "destinatario_id": destinatario.id,
-                "remetente_id": remetente.id
-            }
+            parameters={"username": username}
         ).fetchone()
-
-        if row:
-            return Solicitacao(
-                destinatario=destinatario,
-                remetente=remetente,
-                status=row["status"]
-            )
-        return None
-
-    def _find_user_by_id(self, user_id: int) -> User:
-        """
-        Busca um usuário pelo ID. Método auxiliar para compor a solicitação.
-
-        Args:
-            user_id (int): O ID do usuário.
-
-        Returns:
-            User: O usuário encontrado.
-        """
-        query = text("""
-        SELECT id, cpf, username, email, birthdate, encrypted_password
-        FROM users
-        WHERE id = :id
-        """)
-        row = self._conn.execute(
-            statement=query,
-            parameters={"id": user_id}
-        ).fetchone()
-
         if row:
             return User(
-                id=row["id"],
-                cpf=row["cpf"],
-                username=row["username"],
-                email=row["email"],
-                birthdate=row["birthdate"],
-                encrypted_password=row["encrypted_password"]
+                id=row[0],
+                cpf=row[1],
+                username=row[2],
+                email=row[3],
+                birthdate=row[4],
+                encrypted_password=row[5]
             )
-        raise ValueError(f"Usuário com ID {user_id} não encontrado.")
+        return None
