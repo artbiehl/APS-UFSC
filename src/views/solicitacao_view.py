@@ -1,84 +1,75 @@
 import tkinter as tk
 from tkinter import messagebox
-import sys
-import os
-import datetime
-
 
 class SolicitacaoView:
     def __init__(self, root, solicitacoes, voltar_callback, controller):
         """
-        Inicializa a tela de solicitações de amizade.
-
         Args:
-            root (tk.Tk): Janela principal.
-            solicitacoes (list): Lista de solicitações no formato [{"username": str, "solicitacao": Solicitacao}, ...].
-            voltar_callback (function): Função chamada ao clicar no botão "Voltar".
-            controller (SolicitacaoController): Controlador responsável pela lógica de solicitações.
+            root (tk.Tk)
+            solicitacoes (list[Solicitacao])
+            voltar_callback (callable)
+            controller (SolicitacaoController)
         """
         self.root = root
         self.controller = controller
+        # agora guardamos a lista de Solicitacao
+        self.solicitacoes = list(solicitacoes)
+
         self.root.title("Amizades")
-
-        # Título no topo
         tk.Label(root, text="Amizades", font=("Arial", 16, "bold")).pack(pady=10)
+        tk.Button(root, text="Voltar", command=voltar_callback).place(relx=0.9, rely=0.05)
 
-        # Botão de voltar no canto superior direito
-        voltar_button = tk.Button(root, text="Voltar", command=voltar_callback)
-        voltar_button.place(relx=0.9, rely=0.05)
-
-        # Frame para as solicitações
         self.solicitacoes_frame = tk.Frame(root)
         self.solicitacoes_frame.pack(pady=20)
 
-        # Exibir as solicitações
-        self.exibir_solicitacoes(solicitacoes)
+        self.exibir_solicitacoes()
 
-    def exibir_solicitacoes(self, solicitacoes):
-        """
-        Exibe as solicitações de amizade na tela.
+    def exibir_solicitacoes(self):
+        # limpa tudo
+        for w in self.solicitacoes_frame.winfo_children():
+            w.destroy()
 
-        Args:
-            solicitacoes (list): Lista de solicitações no formato [{"username": str, "solicitacao": Solicitacao}, ...].
-        """
-        for widget in self.solicitacoes_frame.winfo_children():
-            widget.destroy()  # Limpa o frame antes de adicionar novas solicitações
-
-        if not solicitacoes:
+        if not self.solicitacoes:
             tk.Label(self.solicitacoes_frame, text="Nenhuma solicitação de amizade.", font=("Arial", 12)).pack()
             return
 
-        for solicitacao_data in solicitacoes:
-            username = solicitacao_data["username"]
-            solicitacao = solicitacao_data["solicitacao"]
-
+        for solicitacao in list(self.solicitacoes):
             frame = tk.Frame(self.solicitacoes_frame)
             frame.pack(pady=5, padx=10, fill="x")
 
-            # Texto da solicitação
-            tk.Label(frame, text=f"Solicitação de amizade de {username}", font=("Arial", 12)).pack(side="left", padx=5)
+            remetente = solicitacao.remetente.username
+            tk.Label(frame, text=f"Solicitação de amizade de {remetente}", font=("Arial", 12)) \
+                .pack(side="left", padx=5)
 
-            # Botão de aceitar
-            aceitar_button = tk.Button(frame, text="Aceitar", command=lambda s=solicitacao: self.aceitar_solicitacao(s))
-            aceitar_button.pack(side="right", padx=5)
+            tk.Button(
+                frame,
+                text="Aceitar",
+                command=lambda s=solicitacao: self._processar_solicitacao(s, True)
+            ).pack(side="right", padx=5)
 
-            # Botão de recusar
-            recusar_button = tk.Button(frame, text="Recusar", command=lambda s=solicitacao: self.recusar_solicitacao(s))
-            recusar_button.pack(side="right", padx=5)
+            tk.Button(
+                frame,
+                text="Recusar",
+                command=lambda s=solicitacao: self._processar_solicitacao(s, False)
+            ).pack(side="right", padx=5)
 
-    def aceitar_solicitacao(self, solicitacao):
+    def _processar_solicitacao(self, solicitacao, aceitar: bool):
         try:
-            self.controller.aceitar(solicitacao)  # Chama o método do controlador
-            messagebox.showinfo("Solicitação Aceita", f"Você aceitou a solicitação de {solicitacao.remetente.username}.")
+            if aceitar:
+                self.controller.aceitar(solicitacao)
+                msg = f"Você aceitou a solicitação de {solicitacao.remetente.username}."
+            else:
+                self.controller.recusar(solicitacao)
+                msg = f"Você recusou a solicitação de {solicitacao.remetente.username}."
+            messagebox.showinfo(
+                "Solicitação " + ("Aceita" if aceitar else "Recusada"),
+                msg
+            )
+            # remove da lista e re-renderiza
+            self.solicitacoes.remove(solicitacao)
+            self.exibir_solicitacoes()
         except Exception as e:
-            messagebox.showerror("Erro", f"Erro ao aceitar solicitação: {str(e)}")
-
-    def recusar_solicitacao(self, solicitacao):
-        try:
-            self.controller.recusar(solicitacao)  # Chama o método do controlador
-            messagebox.showinfo("Solicitação Recusada", f"Você recusou a solicitação de {solicitacao.remetente.username}.")
-        except Exception as e:
-            messagebox.showerror("Erro", f"Erro ao recusar solicitação: {str(e)}")
+            messagebox.showerror("Erro", f"Erro ao processar solicitação: {e}")
 
 
 # aqui só exemplo de uso, tirar no final
