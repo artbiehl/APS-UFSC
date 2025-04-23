@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
+import datetime
 
 class SolicitacaoView:
     def __init__(self, root, solicitacoes, voltar_callback, controller):
