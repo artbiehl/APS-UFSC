@@ -2,7 +2,6 @@ from models.solicitacao import Solicitacao
 from models.user import User
 from repositories.solicitacao_repository import SolicitacaoRepository
 
-
 class SolicitacaoController:
     """
     Controlador para gerenciar as solicitações no sistema.
@@ -18,9 +17,9 @@ class SolicitacaoController:
         Inicializa o controlador de solicitações.
 
         Args:
-            solicitacao_repository (SolicitacaoRepository, opcional): Repositório para persistência das solicitações.
+            solicitacao_repository (SolicitacaoRepository, opcional): 
+                Repositório para persistência das solicitações.
         """
-        # Usa o repositório fornecido ou instancia o padrão
         self._solicitacao_repository = solicitacao_repository or SolicitacaoRepository()
 
     def enviar(self, destinatario: User, remetente: User) -> Solicitacao:
@@ -38,32 +37,50 @@ class SolicitacaoController:
         self._solicitacao_repository.add(solicitacao)
         return solicitacao
 
-    def aceitar(self, solicitacao: Solicitacao):
+    def aceitar(self, solicitacao: Solicitacao) -> Solicitacao:
         """
         Aceita uma solicitação existente.
 
         Args:
             solicitacao (Solicitacao): A solicitação a ser aceita.
 
+        Returns:
+            Solicitacao: A solicitação com status atualizado.
+
         Raises:
+            TypeError: Se o parâmetro não for uma instância de Solicitacao.
             ValueError: Se a solicitação já tiver sido processada.
         """
+        # validação de tipo
+        if not isinstance(solicitacao, Solicitacao):
+            raise TypeError("O argumento deve ser uma instância de Solicitacao.")
+        # só aceita se estiver pendente
         if solicitacao.status != "Pendente":
             raise ValueError("Solicitação já foi processada.")
+        # atualiza status
         solicitacao.status = "Aceita"
+        # persiste alteração no banco
         self._solicitacao_repository.update(solicitacao)
+        return solicitacao
 
-    def recusar(self, solicitacao: Solicitacao):
+    def recusar(self, solicitacao: Solicitacao) -> Solicitacao:
         """
         Recusa uma solicitação existente.
 
         Args:
             solicitacao (Solicitacao): A solicitação a ser recusada.
 
+        Returns:
+            Solicitacao: A solicitação com status atualizado.
+
         Raises:
+            TypeError: Se o parâmetro não for uma instância de Solicitacao.
             ValueError: Se a solicitação já tiver sido processada.
         """
+        if not isinstance(solicitacao, Solicitacao):
+            raise TypeError("O argumento deve ser uma instância de Solicitacao.")
         if solicitacao.status != "Pendente":
             raise ValueError("Solicitação já foi processada.")
         solicitacao.status = "Recusada"
         self._solicitacao_repository.update(solicitacao)
+        return solicitacao
