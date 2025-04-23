@@ -1,5 +1,6 @@
 from models.solicitacao import Solicitacao
 from models.user import User
+from repositories.solicitacao_repository import SolicitacaoRepository
 
 
 class SolicitacaoController:
@@ -12,6 +13,16 @@ class SolicitacaoController:
         recusar(solicitacao): Recusa uma solicitação existente.
     """
 
+    def __init__(self, solicitacao_repository: SolicitacaoRepository = None):
+        """
+        Inicializa o controlador de solicitações.
+
+        Args:
+            solicitacao_repository (SolicitacaoRepository, opcional): Repositório para persistência das solicitações.
+        """
+        # Usa o repositório fornecido ou instancia o padrão
+        self._solicitacao_repository = solicitacao_repository or SolicitacaoRepository()
+
     def enviar(self, destinatario: User, remetente: User) -> Solicitacao:
         """
         Envia uma nova solicitação.
@@ -21,10 +32,10 @@ class SolicitacaoController:
             remetente (User): O usuário que enviará a solicitação.
 
         Returns:
-            Solicitacao: A solicitação criada.
+            Solicitacao: A solicitação criada e persistida.
         """
         solicitacao = Solicitacao(destinatario=destinatario, remetente=remetente)
-        # logica para persistir a solicitação no banco de dados
+        self._solicitacao_repository.add(solicitacao)
         return solicitacao
 
     def aceitar(self, solicitacao: Solicitacao):
@@ -33,8 +44,14 @@ class SolicitacaoController:
 
         Args:
             solicitacao (Solicitacao): A solicitação a ser aceita.
+
+        Raises:
+            ValueError: Se a solicitação já tiver sido processada.
         """
-        pass  # thives implementa
+        if solicitacao.status != "Pendente":
+            raise ValueError("Solicitação já foi processada.")
+        solicitacao.status = "Aceita"
+        self._solicitacao_repository.update(solicitacao)
 
     def recusar(self, solicitacao: Solicitacao):
         """
@@ -42,5 +59,11 @@ class SolicitacaoController:
 
         Args:
             solicitacao (Solicitacao): A solicitação a ser recusada.
+
+        Raises:
+            ValueError: Se a solicitação já tiver sido processada.
         """
-        pass  # thives implementa
+        if solicitacao.status != "Pendente":
+            raise ValueError("Solicitação já foi processada.")
+        solicitacao.status = "Recusada"
+        self._solicitacao_repository.update(solicitacao)
