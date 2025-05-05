@@ -33,8 +33,20 @@ class SolicitacaoController:
         Returns:
             Solicitacao: A solicitação criada e persistida.
         """
+        if not isinstance(destinatario, User):
+            raise TypeError("O destinatário deve ser uma instância de User.")
+        if not isinstance(remetente, User):
+            raise TypeError("O remetente deve ser uma instância de User.")
+        
+        if destinatario == remetente:
+            raise ValueError("O destinatário e o remetente não podem ser a mesma pessoa.")
+        
+        # Cria a solicitação
         solicitacao = Solicitacao(destinatario=destinatario, remetente=remetente)
+        
+        # Persiste a solicitação no repositório
         self._solicitacao_repository.add(solicitacao)
+        
         return solicitacao
 
     def aceitar(self, solicitacao: Solicitacao) -> Solicitacao:
